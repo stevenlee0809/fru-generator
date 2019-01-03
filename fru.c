@@ -8,6 +8,8 @@
 #include <endian.h>
 #include <time.h>
 
+#include "fru.h"
+
 #define FRU_TYPE_LENGTH_TYPE_CODE_SHIFT		0x06
 #define FRU_TYPE_LENGTH_TYPE_CODE_LANGUAGE_CODE 0x03
 #define FRU_TYPE_LENGTH_TYPE_CODE_BIN_CODE 0x00
@@ -17,6 +19,7 @@
 
 #define FRU_COMMON_AREA_MAX_LENGTH	2048       // 256 * 8
 #define FRU_COMMON_AREA_LENGTH_OFFSET	0x01
+#define FRU_AREA_TYPE_LENGTH_FIELD_MAX  512
 
 static uint8_t crc_calculate(const uint8_t *data,size_t len)
 {
@@ -73,7 +76,7 @@ static void _fru_bin_expand(struct fru_bin *bin,size_t new_size)
 	bin->size = new_size;
 }
 
-void fru_bin_append_byte(struct fru_bin *bin,uint8_t data)
+static void fru_bin_append_byte(struct fru_bin *bin,uint8_t data)
 {
 	if(bin->length >= bin->size){
 		size_t new_size = bin->size*2;
@@ -85,7 +88,7 @@ void fru_bin_append_byte(struct fru_bin *bin,uint8_t data)
 }
 
 
-void fru_bin_append_bytes(struct fru_bin *bin,const void *data,size_t len)
+static void fru_bin_append_bytes(struct fru_bin *bin,const void *data,size_t len)
 {
 	size_t length_need = bin->length + len;
 	if( length_need >= bin->size ){
@@ -112,14 +115,14 @@ void fru_bin_debug(struct fru_bin *bin)
 	printf("\nsum=0x%.2x\n",sum);
 }
 
-void fru_common_area_init_append(struct fru_bin *bin)
+static void fru_common_area_init_append(struct fru_bin *bin)
 {
 	fru_bin_append_byte(bin,FRU_FORMAT_VERSION);
 	fru_bin_append_byte(bin,0);
 }
 
 
-void fru_common_area_final_append(struct fru_bin *bin)
+static void fru_common_area_final_append(struct fru_bin *bin)
 {
 	fru_bin_append_byte(bin,FRU_SENTINEL_VALUE);
 
@@ -137,7 +140,7 @@ void fru_common_area_final_append(struct fru_bin *bin)
 	
 }
 
-void fru_board_area_append_mfg(struct fru_bin *bin,const char *time)
+static void fru_board_area_append_mfg(struct fru_bin *bin,const char *time)
 {
 	struct tm tm;
 	memset(&tm, 0, sizeof(struct tm));
@@ -161,46 +164,110 @@ static uint8_t type_length_code(uint8_t type,size_t length)
 	return length|type;
 }
 
-void fru_common_area_type_length_append_language_data(struct fru_bin *bin,
-			const void *data,size_t len)
+static void fru_area_field_init_by_string(struct fru_bin *field,const char *string)
 {
-	uint8_t type_length = type_length_code(FRU_TYPE_LENGTH_TYPE_CODE_LANGUAGE_CODE,
-					len);
-	fru_bin_append_byte(bin,type_length);	
-	fru_bin_append_bytes(bin,data,len);
+        field->length = 0;
 
+        uint8_t len = strlen(string);
+        uint8_t type_length = type_length_code(FRU_TYPE_LENGTH_TYPE_CODE_LANGUAGE_CODE,len);
+        fru_bin_append_byte(field,type_length);
+        fru_bin_append_bytes(field,string,len);
 }
 
-void fru_common_area_type_length_append_bin_data(struct fru_bin *bin,
-			const void *data,size_t len)
+struct fru_bin *fru_area_field_create_by_string(const char *string)
 {
-	uint8_t type_length = type_length_code(FRU_TYPE_LENGTH_TYPE_CODE_BIN_CODE,
-					len);
+        struct fru_bin *field = fru_bin_create(64);
+        fru_area_field_init_by_string(field,string);
 
-	fru_bin_append_byte(bin,type_length);	
-	fru_bin_append_bytes(bin,data,len);
+        return field;
 }
 
-void fru_chassis_info_append(struct fru_bin *bin,uint8_t type,const char *partnumber,
-			const char *serialnumber)
+
+static void fru_common_area_field_append(struct fru_bin *bin,struct fru_bin *field)
+{
+        fru_bin_append_bytes(bin,field->data,field->length);
+}
+
+static void fru_common_area_custom_field_append(struct fru_bin *bin,struct fru_bin **custom_field)
+{
+        int i;
+        for(i=0;i<OPENBMC_VPD_KEY_CUSTOM_FIELDS_MAX;i++){
+                if(custom_field[i] == NULL)
+                        return;
+                fru_common_area_field_append(bin,custom_field[i]);
+        }
+        
+}
+
+
+#define FRU_COMMON_AREA_FIELD_APPEND(bin,field)         \
+        do {                                            \
+           if(field == NULL) {                          \
+                   fru_common_area_final_append(bin);   \
+                   return;                              \
+           }                                            \
+           fru_common_area_field_append(bin,field);     \
+        } while(0)                                      
+
+void fru_chassis_info_append(struct fru_bin *bin,struct chassis_info *chassis)
+{
+
+	fru_common_area_init_append(bin);
+        
+	fru_bin_append_byte(bin,chassis->type);
+        FRU_COMMON_AREA_FIELD_APPEND(bin,chassis->part_number);
+        FRU_COMMON_AREA_FIELD_APPEND(bin,chassis->serial_number);
+
+        fru_common_area_custom_field_append(bin,chassis->custom_field);
+        fru_common_area_final_append(bin);
+}
+
+void fru_board_info_append(struct fru_bin *bin,struct board_info *board)
 {
 	fru_common_area_init_append(bin);
+	fru_bin_append_byte(bin,board->language_code);
+        fru_board_area_append_mfg(bin,board->time);
 
-	fru_bin_append_byte(bin,type);
-	fru_common_area_type_length_append_language_data(
-			bin,partnumber,strlen(partnumber));
-	fru_common_area_type_length_append_language_data(
-			bin,serialnumber,strlen(serialnumber));
+        FRU_COMMON_AREA_FIELD_APPEND(bin,board->manufacturer);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,board->product_name);
+        FRU_COMMON_AREA_FIELD_APPEND(bin,board->serial_number);
+        FRU_COMMON_AREA_FIELD_APPEND(bin,board->part_number);
+        FRU_COMMON_AREA_FIELD_APPEND(bin,board->fru_file_id);
 
-	fru_common_area_final_append(bin);
+        fru_common_area_custom_field_append(bin,board->custom_field);
+
+        fru_common_area_final_append(bin);
+
 }
 
+void fru_product_info_append(struct fru_bin *bin,struct product_info *product)
+{
+	fru_common_area_init_append(bin);
+	fru_bin_append_byte(bin,product->language_code);
+        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->manufacturer);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->product_name);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->part_number);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->version);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->serial_number);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->asset_tag);        
+        FRU_COMMON_AREA_FIELD_APPEND(bin,product->fru_file_id);        
+
+        fru_common_area_custom_field_append(bin,product->custom_field);
+
+        fru_common_area_final_append(bin);
+
+}
 
 int main()
 {
-	struct fru_bin *bin = fru_bin_create(100);
+       struct chassis_info chassis;
+       chassis.type = 0; 
 
-	fru_chassis_info_append(bin,1,"inspur","ON5263m5");
+       chassis.serial_number = fru_area_field_create_by_string("inspur");
+       chassis.part_number= fru_area_field_create_by_string("on5263m5");
 
-	fru_bin_debug(bin);
+        struct fru_bin *bin = fru_bin_create(100);
+       fru_chassis_info_append(bin,&chassis);
+       fru_bin_debug(bin);
 }
