@@ -177,8 +177,17 @@ int main(int argc,char **argv)
                 fclose(fp);
                 exit(-1);
         }
+        fclose(fp);
+
 
         cJSON *json = cJSON_Parse(buffer);
+        if(json == NULL){
+                const char *error_ptr = cJSON_GetErrorPtr();
+                if(error_ptr != NULL)
+                        fprintf(stderr,"json parse error before %s\n",error_ptr);
+                exit(-1);
+        }
+
         bin_generator(bin_filename,json);
         cJSON_Delete(json);
 
