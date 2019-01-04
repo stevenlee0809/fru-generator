@@ -201,7 +201,7 @@ struct fru_area_chassis_info{
 struct fru_area_board_info{
         uint8_t language_code;
 
-        char time[32];
+        char mfg_time[32];
 
         struct fru_bin *manufacturer;
         struct fru_bin *product_name;
@@ -259,7 +259,7 @@ void fru_fru_area_board_info_append(struct fru_bin *bin,struct fru_area_board_in
 
 	fru_common_area_init_append(bin);
 	fru_bin_append_byte(bin,board->language_code);
-        fru_board_area_append_mfg(bin,board->time);
+        fru_board_area_append_mfg(bin,board->mfg_time);
 
         FRU_COMMON_AREA_FIELD_APPEND(bin,board->manufacturer);        
         FRU_COMMON_AREA_FIELD_APPEND(bin,board->product_name);
@@ -420,7 +420,7 @@ struct fru_area_board_info *fru_area_board_info_create_by_string(struct board_in
         memset(board,0,sizeof(*board));
 
         board->language_code = info->language_code;
-        sprintf(board->time,"%s",info->time);
+        sprintf(board->mfg_time,"%s",info->mfg_time);
         board->manufacturer = fru_area_field_create_by_string(info->manufacturer);
         board->product_name = fru_area_field_create_by_string(info->product_name);
         board->serial_number = fru_area_field_create_by_string(info->serial_number);
@@ -475,7 +475,7 @@ void fru_area_product_info_release(struct fru_area_product_info *product)
         free(product);
 }
 
-void fru_bin_generator(const char *filename,struct fru_bin *chassis,
+void fru_bin_generator_by_bin(const char *filename,struct fru_bin *chassis,
                 struct fru_bin *board,struct fru_bin *product)
 {
         struct fru_bin *bin = fru_bin_create(1024);

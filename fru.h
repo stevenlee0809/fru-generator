@@ -16,7 +16,7 @@ struct chassis_info{
 
 struct board_info{
         uint8_t language_code;
-        const char *time;
+        const char *mfg_time;
         const char *manufacturer;
         const char *product_name;
         const char *serial_number;
@@ -69,7 +69,7 @@ void fru_fru_area_board_info_append(struct fru_bin *bin,struct fru_area_board_in
 void fru_fru_area_product_info_append(struct fru_bin *bin,struct fru_area_product_info *product);
 
 
-void fru_bin_generator(const char *filename,struct fru_bin *chassis,
+void fru_bin_generator_by_bin(const char *filename,struct fru_bin *chassis,
                 struct fru_bin *board,struct fru_bin *product);
 
 

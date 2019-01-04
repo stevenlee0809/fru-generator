@@ -1,0 +1,39 @@
+{
+        "chassis":{
+                "type":1,
+                "part_number":   "chassis part number",
+                "serial_number": "chassis serial number",
+                "custom_field":[
+                                 "chassis custom field1",
+                                 "chassis custom field2"
+                               ]
+        },
+        "board":{
+                "language_code":  0,
+                "mfg_time":      "2019-01-01 14:03:32",
+                "manufacturer":  "board manufacturer",
+                "product_name":  "board product name",
+                "serial_number": "board serial number",
+                "part_number":   "board part number",
+                "fru_file_id":   "board fru file id",
+                "custom_field":[
+                                 "board custom field1",
+                                 "board custom field2"
+                               ]
+        },
+        "product":{
+                "language_code":  0,
+                "manufacturer":  "product manufacturer",
+                "product_name":  "product product name",
+                "part_number":   "product part number",
+                "version":       "product version",
+                "serial_number": "product serial number",
+                "asset_tag" : "   product asset tag",
+                "fru_file_id":   "product fru file id",
+                "custom_field":[
+                                 "product custom field1",
+                                 "product custom field2"
+                               ]
+
+        }
+}
