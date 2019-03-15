@@ -136,8 +136,8 @@ static void fru_board_area_append_mfg(struct fru_bin *bin,const char *time)
 	strptime(time,"%Y-%m-%d %H:%M:%S",&tm);
 	struct tm tm_96;
 	memset(&tm_96, 0, sizeof(struct tm));
-	strptime("1996-1-1 00:00:00","%Y-%m-%d %H:%M:%S",&tm_96);
-	
+	tm_96.tm_year = 1996 - 1900;
+
 	time_t sdiff = mktime(&tm) - mktime(&tm_96);
 	uint32_t mdiff = htole32(sdiff/60);
 
