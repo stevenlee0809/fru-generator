@@ -13,12 +13,13 @@
 		return -1;                                                     \
 	} while (0)
 
-static int custom_field_init_by_json(const char **field, cJSON *json) {
+static int custom_field_init_by_json(const char **field, cJSON *json)
+{
 	cJSON *array = cJSON_GetObjectItem(json, "custom_field");
 	int array_size = cJSON_GetArraySize(array);
 	array_size = array_size < OPENBMC_VPD_KEY_CUSTOM_FIELDS_MAX
-			 ? array_size
-			 : OPENBMC_VPD_KEY_CUSTOM_FIELDS_MAX;
+			     ? array_size
+			     : OPENBMC_VPD_KEY_CUSTOM_FIELDS_MAX;
 	int i;
 
 	for (i = 0; i < cJSON_GetArraySize(array); i++) {
@@ -29,8 +30,8 @@ static int custom_field_init_by_json(const char **field, cJSON *json) {
 	return 0;
 }
 
-static int chassis_info_init_by_json(struct chassis_info *chassis,
-				     cJSON *json) {
+static int chassis_info_init_by_json(struct chassis_info *chassis, cJSON *json)
+{
 	memset(chassis, 0, sizeof(*chassis));
 	cJSON *type = cJSON_GetObjectItem(json, "type");
 	if (cJSON_IsNumber(type))
@@ -39,15 +40,16 @@ static int chassis_info_init_by_json(struct chassis_info *chassis,
 		ERROR_FIELD("chassis", "type");
 
 	chassis->part_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
-	chassis->serial_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "serial_number"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
+	chassis->serial_number = cJSON_GetStringValue(
+		cJSON_GetObjectItem(json, "serial_number"));
 
 	custom_field_init_by_json(chassis->custom_field, json);
 	return 0;
 }
 
-static int board_info_init_by_json(struct board_info *board, cJSON *json) {
+static int board_info_init_by_json(struct board_info *board, cJSON *json)
+{
 	memset(board, 0, sizeof(*board));
 	cJSON *language_code = cJSON_GetObjectItem(json, "language_code");
 	if (cJSON_IsNumber(language_code))
@@ -56,25 +58,25 @@ static int board_info_init_by_json(struct board_info *board, cJSON *json) {
 		ERROR_FIELD("board", "language_code");
 
 	board->mfg_time =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "mfg_time"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "mfg_time"));
 	board->manufacturer =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "manufacturer"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "manufacturer"));
 	board->product_name =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "product_name"));
-	board->serial_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "serial_number"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "product_name"));
+	board->serial_number = cJSON_GetStringValue(
+		cJSON_GetObjectItem(json, "serial_number"));
 	board->part_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
 	board->fru_file_id =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "fru_file_id"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "fru_file_id"));
 
 	custom_field_init_by_json(board->custom_field, json);
 
 	return 0;
 }
 
-static int product_info_init_by_json(struct product_info *product,
-				     cJSON *json) {
+static int product_info_init_by_json(struct product_info *product, cJSON *json)
+{
 	memset(product, 0, sizeof(*product));
 	cJSON *language_code = cJSON_GetObjectItem(json, "language_code");
 	if (cJSON_IsNumber(language_code))
@@ -83,24 +85,25 @@ static int product_info_init_by_json(struct product_info *product,
 		ERROR_FIELD("product", "language_code");
 
 	product->manufacturer =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "manufacturer"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "manufacturer"));
 	product->product_name =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "product_name"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "product_name"));
 	product->part_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "part_number"));
 	product->version =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "version"));
-	product->serial_number =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "serial_number"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "version"));
+	product->serial_number = cJSON_GetStringValue(
+		cJSON_GetObjectItem(json, "serial_number"));
 	product->asset_tag =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "asset_tag"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "asset_tag"));
 	product->fru_file_id =
-	    cJSON_GetStringValue(cJSON_GetObjectItem(json, "fru_file_id"));
+		cJSON_GetStringValue(cJSON_GetObjectItem(json, "fru_file_id"));
 
 	return 0;
 }
 
-static int bin_generator(const char *filename, cJSON *json) {
+static int bin_generator(const char *filename, cJSON *json)
+{
 	struct chassis_info chassis_info;
 	struct chassis_info *p_chassis_info;
 	struct board_info board_info;
@@ -134,31 +137,34 @@ static int bin_generator(const char *filename, cJSON *json) {
 	return 0;
 }
 
-void usage(const char *name) {
+void usage(const char *name)
+{
 	fprintf(stdout, "Usge: %s -j [fru.json] -b [fru.bin]\n", name);
 	exit(-1);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	int opt = 0;
 	const char *json_filename = NULL;
 	const char *bin_filename = NULL;
 
 	while ((opt = getopt(argc, argv, "j:b:h")) != -1) {
 		switch (opt) {
-			case 'j':
-				json_filename = optarg;
-				break;
-			case 'b':
-				bin_filename = optarg;
-				break;
-			case 'h':
-				usage(argv[0]);
-				break;
+		case 'j':
+			json_filename = optarg;
+			break;
+		case 'b':
+			bin_filename = optarg;
+			break;
+		case 'h':
+			usage(argv[0]);
+			break;
 		}
 	}
 
-	if (json_filename == NULL || bin_filename == NULL) usage(argv[0]);
+	if (json_filename == NULL || bin_filename == NULL)
+		usage(argv[0]);
 
 	FILE *fp = fopen(json_filename, "r");
 	if (fp == NULL) {
