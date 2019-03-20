@@ -165,6 +165,8 @@ static void fru_area_field_init_by_string(struct fru_bin *field,
 
 struct fru_bin *fru_area_field_create_by_string(const char *string)
 {
+	if (string == NULL)
+		return NULL;
 	struct fru_bin *field = fru_bin_create(64);
 	fru_area_field_init_by_string(field, string);
 
