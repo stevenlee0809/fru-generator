@@ -99,6 +99,8 @@ static int product_info_init_by_json(struct product_info *product, cJSON *json)
 	product->fru_file_id =
 		cJSON_GetStringValue(cJSON_GetObjectItem(json, "fru_file_id"));
 
+	custom_field_init_by_json(product->custom_field, json);
+
 	return 0;
 }
 
